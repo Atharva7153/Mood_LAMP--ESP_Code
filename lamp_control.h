@@ -31,4 +31,10 @@ void setMultiColors(const std::vector<CRGB>& colors);
 
 void turnLampOff();
 
+// Transition delay in milliseconds used during multi-color animation
+extern unsigned int transitionDelayMs;
+
+// Set the transition delay (ms) for multi-color animations
+void setTransitionDelay(unsigned int ms);
+
 #endif

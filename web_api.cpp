@@ -80,6 +80,33 @@ void setupRoutes() {
     sendTextResponse(200, "OK");
   });
 
+  server.on("/color/speed", HTTP_OPTIONS, []() {
+    server.sendHeader("Access-Control-Allow-Origin", "*");
+    server.sendHeader("Access-Control-Allow-Methods", "POST,OPTIONS");
+    server.sendHeader("Access-Control-Allow-Headers", "Content-Type");
+    server.send(204);
+  });
+
+  // POST transition speed as JSON { ms: <number> } (milliseconds per frame)
+  server.on("/color/speed", HTTP_POST, []() {
+    String body = server.arg("plain");
+    StaticJsonDocument<100> doc;
+    DeserializationError err = deserializeJson(doc, body);
+    if (err) {
+      sendTextResponse(400, "Invalid JSON");
+      return;
+    }
+    unsigned int ms = 0;
+    if (doc.containsKey("ms")) ms = doc["ms"].as<unsigned int>();
+    else if (doc.containsKey("speed")) ms = doc["speed"].as<unsigned int>();
+    if (ms == 0) {
+      sendTextResponse(400, "Invalid speed value");
+      return;
+    }
+    setTransitionDelay(ms);
+    sendTextResponse(200, "OK");
+  });
+
 
   server.on("/ir/on", []() {
     setIrMode(true);

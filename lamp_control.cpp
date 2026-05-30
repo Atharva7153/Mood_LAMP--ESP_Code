@@ -6,7 +6,8 @@ bool irMode = false;
 bool lampEnabled = true;
 bool multiMode = false;
 
-CRGB currentSingle = CRGB(255,140,40);
+// default warm golden color when lamp turns on
+CRGB currentSingle = CRGB(255, 231, 186);
 uint8_t brightness = 120;
 
 #include <vector>
@@ -14,6 +15,9 @@ uint8_t brightness = 120;
 std::vector<CRGB> multiColorsVec;
 
 int irTriggeredValue = LOW;
+
+// transition delay used by animateMulti (ms)
+unsigned int transitionDelayMs = 15;
 
 void applyCurrentColors() {
   if (!lampEnabled) return;
@@ -129,7 +133,15 @@ void animateMulti() {
     currentTarget = (currentTarget + 1) % multiColorsVec.size();
   }
 
-  delay(15);
+  // wait between frames; adjustable via setTransitionDelay
+  delay(transitionDelayMs);
+}
+
+void setTransitionDelay(unsigned int ms) {
+  // clamp to decent bounds
+  if (ms < 3) ms = 3;
+  if (ms > 1000) ms = 1000;
+  transitionDelayMs = ms;
 }
 
 void turnLampOff() {
