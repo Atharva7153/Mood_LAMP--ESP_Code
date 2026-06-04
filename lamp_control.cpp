@@ -8,7 +8,7 @@ bool multiMode = false;
 
 // default warm golden color when lamp turns on
 CRGB currentSingle = CRGB(255, 231, 186);
-uint8_t brightness = 120;
+uint8_t brightness = 255;
 
 #include <vector>
 

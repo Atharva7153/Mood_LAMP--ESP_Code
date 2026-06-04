@@ -21,16 +21,62 @@ const char* wifiStatusToString(wl_status_t s) {
   }
 }
 
+void scanNearbyNetworks() {
+  Serial.println("\n    Scanning nearby WiFi networks...");
+  
+  int numNetworks = WiFi.scanNetworks();
+  
+  Serial.print("    Found ");
+  Serial.print(numNetworks);
+  Serial.println(" network(s):\n");
+  
+  if (numNetworks > 0) {
+    for (int i = 0; i < numNetworks; i++) {
+      Serial.print("    [");
+      Serial.print(i + 1);
+      Serial.print("] ");
+      Serial.print(WiFi.SSID(i));
+      Serial.print(" (");
+      Serial.print(WiFi.RSSI(i));
+      Serial.print(" dBm)");
+      
+      // Check if this is our target network
+      if (strcmp(WiFi.SSID(i).c_str(), WIFI_SSID) == 0) {
+        Serial.print(" ← TARGET NETWORK");
+      }
+      Serial.println("");
+    }
+  } else {
+    Serial.println("    No networks found!");
+  }
+  Serial.println("");
+}
+
+
 void setup() {
 
   Serial.begin(115200);
+  delay(500);
 
+  Serial.println("\n\n================================");
+  Serial.println("  MOOD LAMP - STARTUP SEQUENCE");
+  Serial.println("================================\n");
+
+  Serial.println("[1] Initializing LED System...");
   setupLamp();
+  Serial.println("    ✓ LED System initialized\n");
+
+  Serial.println("[2] WiFi Configuration:");
+  Serial.print("    Target SSID: ");
+  Serial.println(WIFI_SSID);
+  
+  // Scan for nearby networks
+  scanNearbyNetworks();
+  
+  Serial.println("    Attempting connection...");
 
   WiFi.mode(WIFI_STA);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-
-  Serial.print("Connecting");
 
   unsigned long start = millis();
   const unsigned long timeout = 20000; // 20s
@@ -40,25 +86,38 @@ void setup() {
     Serial.print(".");
   }
 
-  Serial.println("");
+  Serial.println("\n");
 
   if (WiFi.status() != WL_CONNECTED) {
-    Serial.print("Failed to connect, status: ");
+    Serial.print("    ✗ CONNECTION FAILED - Status: ");
     Serial.print(WiFi.status());
     Serial.print(" (");
     Serial.print(wifiStatusToString(WiFi.status()));
     Serial.println(")");
   } else {
-    Serial.println("WiFi Connected");
-    Serial.print("ESP32 IP: ");
+    Serial.println("    ✓ Successfully Connected!");
+    Serial.print("    Connected SSID: ");
+    Serial.println(WiFi.SSID());
+    Serial.print("    IP Address: ");
     Serial.println(WiFi.localIP());
+    Serial.print("    Gateway: ");
+    Serial.println(WiFi.gatewayIP());
+    Serial.print("    Signal Strength: ");
+    Serial.print(WiFi.RSSI());
+    Serial.println(" dBm");
   }
 
+  Serial.println("\n[3] Setting up API Routes...");
   setupRoutes();
+  Serial.println("    ✓ Routes configured\n");
 
+  Serial.println("[4] Starting Web Server...");
   server.begin();
+  Serial.println("    ✓ Server running on port 80\n");
 
-  Serial.println("Server Started");
+  Serial.println("================================");
+  Serial.println("  SYSTEM READY - ACCEPTING REQUESTS");
+  Serial.println("================================\n");
 }
 
 void loop() {

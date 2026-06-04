@@ -247,7 +247,14 @@ void setupRoutes() {
 
     sendTextResponse(200, "Romantic Multi");
   });
-  server.on("/brightness/low", []() {
+  server.on("/brightness/ultra-low", []() {
+
+  setBrightnessLevel(30);
+
+  sendTextResponse(200, "Ultra-Low Brightness");
+});
+
+server.on("/brightness/low", []() {
 
   setBrightnessLevel(60);
 
