@@ -52,6 +52,47 @@ void scanNearbyNetworks() {
   Serial.println("");
 }
 
+// WiFi Connection Visual Feedback - Soft cyan breathing animation
+void breatheConnecting(unsigned long elapsedMs) {
+  CRGB connectingColor = CRGB(100, 220, 255); // Bright Cyan
+  unsigned long breathePeriod = 1600; // 1.6s for smooth breathing
+  unsigned long cycleMs = elapsedMs % breathePeriod;
+  
+  // Smooth sine wave breathing: goes from 50 to 255 brightness
+  float progress = (float)cycleMs / breathePeriod; // 0.0 to 1.0
+  float sine = sin(progress * 2 * 3.14159); // -1 to 1
+  uint8_t brightness = map((int)((sine + 1) * 127.5), 0, 255, 80, 255);
+  
+  CRGB breathed = connectingColor;
+  breathed.fadeLightBy(255 - brightness);
+  
+  for (int i = 0; i < NUM_LEDS; i++) {
+    leds[i] = breathed;
+  }
+  FastLED.show();
+}
+
+// WiFi Connection Success Visual Feedback - Bright green fade out
+void fadeOutConnected() {
+  CRGB connectedColor = CRGB(100, 255, 150); // Bright Green
+  unsigned long fadeDuration = 1500; // 1.5 seconds fade
+  unsigned long fadeStart = millis();
+  
+  while (millis() - fadeStart < fadeDuration) {
+    unsigned long elapsed = millis() - fadeStart;
+    uint8_t brightness = map(elapsed, 0, fadeDuration, 255, 0);
+    
+    CRGB faded = connectedColor;
+    faded.fadeLightBy(255 - brightness);
+    
+    for (int i = 0; i < NUM_LEDS; i++) {
+      leds[i] = faded;
+    }
+    FastLED.show();
+    delay(20);
+  }
+}
+
 
 void setup() {
 
@@ -65,6 +106,9 @@ void setup() {
   Serial.println("[1] Initializing LED System...");
   setupLamp();
   Serial.println("    ✓ LED System initialized\n");
+
+  // Start breathing animation immediately - WiFi connecting visual
+  unsigned long wifiStartTime = millis();
 
   Serial.println("[2] WiFi Configuration:");
   Serial.print("    Target SSID: ");
@@ -81,8 +125,11 @@ void setup() {
   unsigned long start = millis();
   const unsigned long timeout = 20000; // 20s
 
+  // Show soft cyan breathing while connecting to WiFi
   while (WiFi.status() != WL_CONNECTED && (millis() - start) < timeout) {
-    delay(500);
+    unsigned long elapsedMs = millis() - wifiStartTime;
+    breatheConnecting(elapsedMs);
+    delay(50); // Small delay for breathing animation
     Serial.print(".");
   }
 
@@ -94,6 +141,8 @@ void setup() {
     Serial.print(" (");
     Serial.print(wifiStatusToString(WiFi.status()));
     Serial.println(")");
+    // Restore default light on connection failure
+    setSingleColor(CRGB(255, 231, 186));
   } else {
     Serial.println("    ✓ Successfully Connected!");
     Serial.print("    Connected SSID: ");
@@ -105,6 +154,12 @@ void setup() {
     Serial.print("    Signal Strength: ");
     Serial.print(WiFi.RSSI());
     Serial.println(" dBm");
+    
+    // Show bright green fade-out animation on successful connection
+    fadeOutConnected();
+    
+    // Restore default light after fade-out
+    setSingleColor(CRGB(255, 231, 186));
   }
 
   Serial.println("\n[3] Setting up API Routes...");
