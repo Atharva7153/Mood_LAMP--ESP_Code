@@ -6,6 +6,12 @@ bool irMode = false;
 bool lampEnabled = true;
 bool multiMode = false;
 
+// Button press tracking - edge detection
+bool lastButtonState = HIGH; // Button starts unpressed (HIGH with pull-up)
+unsigned long lastButtonPressTime = 0;
+const unsigned long DEBOUNCE_TIME = 100; // 100ms debounce
+bool buttonInitialized = false;
+
 // default warm golden color when lamp turns on
 CRGB currentSingle = CRGB(255, 231, 186);
 uint8_t brightness = 255;
@@ -76,12 +82,22 @@ void setBrightnessLevel(int value) {
 
 void setupLamp() {
 
+  pinMode(BUTTON_PIN, INPUT_PULLUP);
   pinMode(IR_PIN, INPUT_PULLUP);
 
   FastLED.addLeds<NEOPIXEL, LED_PIN>(leds, NUM_LEDS);
   FastLED.setBrightness(brightness);
 
+  // Initialize button state from current reading
+  lastButtonState = digitalRead(BUTTON_PIN);
+  buttonInitialized = true;
+  
+  // Ensure lamp is ON and showing current color on startup
+  lampEnabled = true;
   setSingleColor(currentSingle);
+  
+  Serial.println("    ✓ Lamp initialized and turned ON");
+  Serial.println("    ✓ Button setup complete (Pin 26)");
 }
 
 void setSingleColor(CRGB color) {
@@ -154,8 +170,27 @@ void turnLampOff() {
 }
 
 void updateLamp() {
-
   static bool prevLampEnabled = lampEnabled;
+
+  // Check button press with edge detection (falling edge: HIGH -> LOW)
+  if (buttonInitialized) {
+    int currentButtonState = digitalRead(BUTTON_PIN);
+    
+    // Edge detection: button pressed (HIGH -> LOW transition)
+    if (currentButtonState == LOW && lastButtonState == HIGH) {
+      unsigned long currentTime = millis();
+      if (currentTime - lastButtonPressTime > DEBOUNCE_TIME) {
+        lampEnabled = !lampEnabled; // Toggle lamp state
+        lastButtonPressTime = currentTime;
+        
+        // Print button press info
+        Serial.print("    [BUTTON] Lamp toggled ");
+        Serial.println(lampEnabled ? "ON" : "OFF");
+      }
+    }
+    
+    lastButtonState = currentButtonState; // Update state for next iteration
+  }
 
   if (irMode) {
     int sensor = digitalRead(IR_PIN);
